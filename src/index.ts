@@ -1,9 +1,10 @@
-export { AMO_API, createAmoClient } from "./client.js"
+export { AMO_API, createAmoClient, getPublicAddon } from "./client.js"
 export type {
   AddPreviewOptions,
   AmoClient,
   AmoClientOptions,
   GetVersionsOptions,
+  PublicReadOptions,
 } from "./client.js"
 export { createAmoError, isAmoError, kindForStatus } from "./errors.js"
 export type { AmoError, AmoErrorKind } from "./errors.js"
@@ -23,6 +24,11 @@ export {
   sameText,
 } from "./listing.js"
 export type { LocalShot, PreviewSyncPlan } from "./listing.js"
+export {
+  htmlToPlainText,
+  markdownToPlainText,
+  sameDescription,
+} from "./markdown.js"
 export { redactHeaders, redactSecrets } from "./redact.js"
 export type {
   AmoAddon,

@@ -87,14 +87,16 @@ console.log(status?.version, status?.approved)
 
 ### Pure helpers
 
-| Helper                             | Description                                                         |
-| ---------------------------------- | ------------------------------------------------------------------- |
-| `readListingFile(path)`            | Read and validate a listing JSON file                               |
-| `diffListing(local, live)`         | List the fields that differ, ignoring entity and outgoing-URL noise |
-| `buildListingPatch(changes)`       | Turn a diff into a patch body for `updateListing`                   |
-| `planPreviewSync(shots, previews)` | Decide which previews to delete and upload                          |
-| `createJwt({ issuer, secret })`    | Sign an AMO-compatible JWT                                          |
-| `redactSecrets(text, secrets)`     | Strip secrets from a string                                         |
+| Helper                             | Description                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| `readListingFile(path)`            | Read and validate a listing JSON file                                                     |
+| `diffListing(local, live)`         | List the fields that differ; descriptions compare as Markdown against AMO's rendered HTML |
+| `sameDescription(local, live)`     | Compare a Markdown description with the HTML AMO returns                                  |
+| `getPublicAddon(guid)`             | Anonymous read (may be cached; `getAddon` is authenticated and live)                      |
+| `buildListingPatch(changes)`       | Turn a diff into a patch body for `updateListing`                                         |
+| `planPreviewSync(shots, previews)` | Decide which previews to delete and upload                                                |
+| `createJwt({ issuer, secret })`    | Sign an AMO-compatible JWT                                                                |
+| `redactSecrets(text, secrets)`     | Strip secrets from a string                                                               |
 
 ### Error handling
 

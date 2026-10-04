@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import {
   createAmoClient,
+  getPublicAddon,
   isAmoError,
   redactHeaders,
   redactSecrets,
@@ -249,5 +250,29 @@ describe("redaction", () => {
       Authorization: "JWT <redacted>",
       Accept: "x",
     })
+  })
+})
+
+describe("getPublicAddon", () => {
+  it("reads anonymously, without an Authorization header", async () => {
+    const calls: { url: string; init?: RequestInit }[] = []
+    const fakeFetch = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, init })
+      return new Response(JSON.stringify({ id: 1, guid: "a@b.c", slug: "x" }))
+    }) as unknown as typeof fetch
+    const addon = await getPublicAddon("a@b.c", { fetch: fakeFetch })
+    expect(addon.slug).toBe("x")
+    expect(calls[0].url).toBe(
+      "https://addons.mozilla.org/api/v5/addons/addon/a@b.c/",
+    )
+    expect(calls[0].init).toBeUndefined()
+  })
+
+  it("throws a typed error on a failed read", async () => {
+    const fakeFetch = (async () =>
+      new Response("{}", { status: 404 })) as unknown as typeof fetch
+    await expect(
+      getPublicAddon("nope", { fetch: fakeFetch }),
+    ).rejects.toMatchObject({ kind: "not-found" })
   })
 })

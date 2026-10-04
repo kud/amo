@@ -265,3 +265,29 @@ export const createAmoClient = (options: AmoClientOptions) => {
 }
 
 export type AmoClient = ReturnType<typeof createAmoClient>
+
+export type PublicReadOptions = { baseUrl?: string; fetch?: typeof fetch }
+
+export const getPublicAddon = async (
+  guid: string,
+  options: PublicReadOptions = {},
+): Promise<AmoAddon> => {
+  const baseUrl = (options.baseUrl ?? AMO_API).replace(/\/+$/, "")
+  const doFetch = options.fetch ?? fetch
+  const response = await doFetch(`${baseUrl}${addonPath(guid)}`).catch(
+    (error: unknown) => {
+      throw createAmoError({
+        status: null,
+        detail: error instanceof Error ? error.message : String(error),
+      })
+    },
+  )
+  if (!response.ok) {
+    throw createAmoError({
+      status: response.status,
+      detail: formatErrorBody(await response.text().catch(() => "")),
+      retryAfterMs: parseRetryAfterMs(response.headers.get("retry-after")),
+    })
+  }
+  return (await response.json()) as AmoAddon
+}

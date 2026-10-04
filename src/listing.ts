@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises"
+import { sameDescription } from "./markdown.js"
 import type {
   AmoPreview,
   Listing,
@@ -120,7 +121,8 @@ export const diffListing = (
     const localText = localizedEnUs(localValue)
     const liveText = localizedEnUs(live[field])
     if (localText == null && liveText == null) return []
-    if (localText != null && liveText != null && sameText(liveText, localText))
+    const equal = field === "description" ? sameDescription : sameText
+    if (localText != null && liveText != null && equal(localText, liveText))
       return []
     return [{ field, live: liveText, patch: localValue }]
   })
