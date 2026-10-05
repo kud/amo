@@ -135,32 +135,128 @@ export const buildListingPatch = (
 export const extractCaption = (caption: unknown): string | null =>
   localizedEnUs(caption)
 
-export type LocalShot = { file: string; caption: string | null }
+export type LocalShot = {
+  file: string
+  caption: string | null
+  sha256?: string
+}
+
+export type PreviewStateEntry = {
+  id: number
+  file: string
+  sha256: string
+  caption: string | null
+}
+
+export type PreviewState = { version: 1; previews: PreviewStateEntry[] }
+
+export type PreviewSyncOptions = {
+  state?: PreviewState | null
+  force?: boolean
+}
+
+export type PreviewSyncReason =
+  | "in-sync"
+  | "no-local-screenshots"
+  | "forced"
+  | "no-state"
+  | "live-changed"
+  | "local-changed"
+
+export type PreviewUpload = LocalShot & { position: number }
 
 export type PreviewSyncPlan = {
   inSync: boolean
+  reason: PreviewSyncReason
   deletes: number[]
-  uploads: LocalShot[]
+  uploads: PreviewUpload[]
+}
+
+const byPosition = <T extends { position?: number }>(previews: T[]): T[] =>
+  [...previews].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+const sameIds = (a: number[], b: number[]) =>
+  a.length === b.length && a.every((id, i) => id === b[i])
+
+const driftReason = (
+  localShots: LocalShot[],
+  live: Pick<AmoPreview, "id" | "caption">[],
+  state: PreviewState | null | undefined,
+): PreviewSyncReason | null => {
+  if (!state) return "no-state"
+  const liveIds = live.map(({ id }) => id)
+  const recordedIds = state.previews.map(({ id }) => id)
+  const liveCaptionsMatch = live.every(
+    (preview, i) =>
+      (extractCaption(preview.caption) ?? "") ===
+      (state.previews[i]?.caption ?? ""),
+  )
+  if (!sameIds(liveIds, recordedIds) || !liveCaptionsMatch) {
+    return "live-changed"
+  }
+  const localMatches =
+    localShots.length === state.previews.length &&
+    localShots.every((shot, i) => {
+      const record = state.previews[i]
+      return (
+        shot.sha256 !== undefined &&
+        shot.sha256 === record?.sha256 &&
+        (shot.caption ?? "") === (record.caption ?? "")
+      )
+    })
+  return localMatches ? null : "local-changed"
 }
 
 export const planPreviewSync = (
   localShots: LocalShot[],
-  livePreviews: Pick<AmoPreview, "id" | "caption">[],
+  livePreviews: Pick<AmoPreview, "id" | "caption" | "position">[],
+  { state, force = false }: PreviewSyncOptions = {},
 ): PreviewSyncPlan => {
-  if (localShots.length === 0) return { inSync: true, deletes: [], uploads: [] }
-  const inSync =
-    localShots.length === livePreviews.length &&
-    localShots.every(
-      (shot, i) =>
-        (shot.caption ?? "") ===
-        (extractCaption(livePreviews[i]?.caption) ?? ""),
-    )
-  if (inSync) return { inSync: true, deletes: [], uploads: [] }
+  if (localShots.length === 0) {
+    return {
+      inSync: true,
+      reason: "no-local-screenshots",
+      deletes: [],
+      uploads: [],
+    }
+  }
+  const live = byPosition(livePreviews)
+  const reason = force ? "forced" : driftReason(localShots, live, state)
+  if (reason === null) {
+    return { inSync: true, reason: "in-sync", deletes: [], uploads: [] }
+  }
   return {
     inSync: false,
-    deletes: livePreviews.map((preview) => preview.id),
-    uploads: localShots.map(({ file, caption }) => ({ file, caption })),
+    reason,
+    deletes: live.map(({ id }) => id),
+    uploads: localShots.map((shot, position) => ({ ...shot, position })),
   }
+}
+
+export const parsePreviewState = (
+  input: unknown,
+  source = "preview state",
+): PreviewState => {
+  const record =
+    input != null && typeof input === "object"
+      ? (input as Record<string, unknown>)
+      : null
+  const previews = record?.["previews"]
+  const valid =
+    record?.["version"] === 1 &&
+    Array.isArray(previews) &&
+    previews.every(
+      (entry: unknown) =>
+        entry != null &&
+        typeof entry === "object" &&
+        typeof (entry as PreviewStateEntry).id === "number" &&
+        typeof (entry as PreviewStateEntry).file === "string" &&
+        typeof (entry as PreviewStateEntry).sha256 === "string" &&
+        ((entry as PreviewStateEntry).caption === null ||
+          typeof (entry as PreviewStateEntry).caption === "string"),
+    )
+  if (!valid) throw new Error(`${source} is not a valid preview state file`)
+  return record as PreviewState
 }
 
 export const toLocalized = (

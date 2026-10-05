@@ -19,11 +19,20 @@ export {
   localizedEnUs,
   normalizeText,
   parseListing,
+  parsePreviewState,
   planPreviewSync,
   readListingFile,
   sameText,
 } from "./listing.js"
-export type { LocalShot, PreviewSyncPlan } from "./listing.js"
+export type {
+  LocalShot,
+  PreviewState,
+  PreviewStateEntry,
+  PreviewSyncOptions,
+  PreviewSyncPlan,
+  PreviewSyncReason,
+  PreviewUpload,
+} from "./listing.js"
 export {
   htmlToPlainText,
   markdownToPlainText,
