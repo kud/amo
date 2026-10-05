@@ -1,6 +1,6 @@
 {
   "name": "@kud/amo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Typed client for the addons.mozilla.org (AMO) API v5: listing, icon, previews and version status.",
   "exports": {
