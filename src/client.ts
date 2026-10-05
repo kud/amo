@@ -185,13 +185,13 @@ export const createAmoClient = (options: AmoClientOptions) => {
     const { blob, filename } = await resolveUpload(file)
     const form = new FormData()
     form.append("image", blob, filename)
-    if (caption) form.append("caption", JSON.stringify(toLocalized(caption)))
     if (position !== undefined) form.append("position", String(position))
-    return requestForm<AmoPreview>(
+    const created = await requestForm<AmoPreview>(
       "POST",
       `${baseUrl}${addonPath(guid)}previews/`,
       form,
     )
+    return caption ? updatePreviewCaption(guid, created.id, caption) : created
   }
 
   const removePreview = async (guid: string, id: number | string) => {

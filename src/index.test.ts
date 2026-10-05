@@ -85,30 +85,49 @@ describe("createAmoClient", () => {
     expect((form.get("icon") as File).name).toBe("icon.png")
   })
 
-  it("adds, captions and removes previews", async () => {
+  it("adds a preview at a position, then captions it in a second call", async () => {
     const { client, calls } = setup([
-      json({ id: 9 }, 201),
+      json({ id: 9, position: 2, caption: null }, 201),
+      json({ id: 9, position: 2, caption: { "en-US": "Hello" } }),
+    ])
+    const preview = await client.addPreview(
+      "g",
+      { data: new Uint8Array([1]), filename: "a.png" },
+      { caption: "Hello", position: 2 },
+    )
+    const form = calls[0].init.body as FormData
+    expect(calls[0].url.endsWith("/previews/")).toBe(true)
+    expect(form.get("position")).toBe("2")
+    expect(form.get("caption")).toBeNull()
+    expect(calls[1].init.method).toBe("PATCH")
+    expect(calls[1].url.endsWith("/previews/9/")).toBe(true)
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({
+      caption: { "en-US": "Hello" },
+    })
+    expect(preview.caption).toEqual({ "en-US": "Hello" })
+  })
+
+  it("adds an uncaptioned preview in one call", async () => {
+    const { client, calls } = setup([json({ id: 9, caption: null }, 201)])
+    await client.addPreview("g", {
+      data: new Uint8Array([1]),
+      filename: "a.png",
+    })
+    expect(calls).toHaveLength(1)
+  })
+
+  it("captions and removes previews", async () => {
+    const { client, calls } = setup([
       json({ id: 9 }),
       new Response(null, { status: 204 }),
     ])
-    await client.addPreview(
-      "g",
-      { data: new Uint8Array([1]), filename: "a.png" },
-      {
-        caption: "Hello",
-      },
-    )
     await client.updatePreviewCaption("g", 9, "Bye")
     await client.removePreview("g", 9)
-    expect((calls[0].init.body as FormData).get("caption")).toBe(
-      JSON.stringify({ "en-US": "Hello" }),
-    )
-    expect(calls[0].url.endsWith("/previews/")).toBe(true)
-    expect(JSON.parse(String(calls[1].init.body))).toEqual({
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({
       caption: { "en-US": "Bye" },
     })
-    expect(calls[2].init.method).toBe("DELETE")
-    expect(calls[2].url.endsWith("/previews/9/")).toBe(true)
+    expect(calls[1].init.method).toBe("DELETE")
+    expect(calls[1].url.endsWith("/previews/9/")).toBe(true)
   })
 
   it("lists previews in position order", async () => {
