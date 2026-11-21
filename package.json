@@ -33,7 +33,7 @@
   "author": "kud",
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
@@ -47,6 +47,6 @@
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.0",
-    "vitest": "5.0.3"
+    "vitest": "4.1.12"
   }
 }
